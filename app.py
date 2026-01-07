@@ -54,24 +54,35 @@ def generate_questions(tech):
 Generate interview questions for {tech}.
 Only output questions.
 """
-    response = ollama.generate(
-        model=MODEL_NAME,
-        prompt=prompt,
-        options={"temperature": 0}
-    )
 
-    questions = []
-    for line in response["response"].split("\n"):
-        line = line.strip()
-        if (
-            line.endswith("?")
-            and "answer" not in line.lower()
-            and "corresponding" not in line.lower()
-            and len(line) > 15
-        ):
-            questions.append(line)
+    try:
+        response = ollama.generate(
+            model=MODEL_NAME,
+            prompt=prompt,
+            options={"temperature": 0}
+        )
 
-    return questions[:3]
+        questions = []
+        for line in response["response"].split("\n"):
+            line = line.strip()
+            if (
+                line.endswith("?")
+                and "answer" not in line.lower()
+                and "corresponding" not in line.lower()
+                and len(line) > 15
+            ):
+                questions.append(line)
+
+        return questions[:3]
+
+    except Exception:
+        #FALLBACK QUESTIONS (if Ollama not available)
+        return [
+            f"What are the core concepts of {tech}?",
+            f"Explain a real-world use case of {tech}.",
+            f"What challenges have you faced while working with {tech}?"
+        ]
+
 
 def generate_reference_answer(question, tech):
     prompt = f"""
@@ -84,13 +95,22 @@ Question: {question}
 
 Do NOT mention the question again.
 """
-    response = ollama.generate(
-        model=MODEL_NAME,
-        prompt=prompt,
-        options={"temperature": 0}
-    )
-    return response["response"].strip()
 
+    try:
+        response = ollama.generate(
+            model=MODEL_NAME,
+            prompt=prompt,
+            options={"temperature": 0}
+        )
+        return response["response"].strip()
+
+    except Exception:
+        # FALLBACK REFERENCE ANSWER
+        return (
+            f"A good answer should explain the fundamental concepts of {tech}, "
+            f"describe how it is used in real-world applications, and highlight "
+            f"best practices, advantages, and limitations clearly."
+        )
 
 def evaluate_answer(answer):
     if len(answer.strip()) < 15:
